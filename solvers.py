@@ -16,3 +16,4 @@ class InfeasibleStartNewton:
    def solve(self, x_init: np.ndarray, v_init: np.ndarray, max_num_iters: int):
       assert(len(v_init.shape) == 1)
       assert(v_init.shape[0] == self.qp.M)
+      
