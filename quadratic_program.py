@@ -30,7 +30,11 @@ class QuadraticProgram:
       assert(self.N > 0)
       assert(self.N == Q.shape[1])
 
-   def objective(self, x: np.ndarray, t: float):
+      self._partial_kkt_mat = np.zeros((self.N + self.M, self.N + self.M))
+      self._partial_kkt_mat[self.N: self.N + self.M, 0: self.N] = self.A
+      self._partial_kkt_mat[0: self.N, self.N: self.N + self.M] = self.A.transpose
+
+   def objective(self, x: np.ndarray, t: float) -> float:
       assert(len(x.shape) == 1)
       assert(x.shape[0] == self.N)
       assert(t > 0)
@@ -57,3 +61,14 @@ class QuadraticProgram:
       hess += self.Q
 
       return hess
+
+   def kkt_matrix(self, x: np.ndarray, t: float) -> np.ndarray:
+      kkt_mat = np.copy(self._partial_kkt_mat)
+      kkt_mat[0: self.N, 0: self.N] = self.hessian(x, t)
+      return kkt_mat
+
+   def in_domain(self, x: np.ndarray) -> bool:
+      assert(len(x.shape) == 1)
+      assert(x.shape[0] == self.N)
+
+      return np.all(np.dot(self.C, x) <= self.d)
