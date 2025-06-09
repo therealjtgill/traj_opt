@@ -71,7 +71,7 @@ class InfeasibleStartNewton:
          s = 1.0
          while (
             not self.qp.in_domain(x + s * delta_x)
-            or np.linalg.norm(self.residual(x + s * delta_x, v + s * delta_v, t)) > (1.0 - alpha * s) * np.linalg.norm(residual)
+            or np.linalg.norm(self.residual(x + s * delta_x, v + s * delta_v, t)) > (1.0 - alpha * s) * np.linalg.norm(res)
          ):
             s *= beta
 
