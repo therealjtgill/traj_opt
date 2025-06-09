@@ -12,7 +12,11 @@ class InfeasibleStartNewton:
    def residual(self, x: np.ndarray, v: np.ndarray, t: float) -> np.ndarray:
       '''
       The `residual` that results from the KKT conditions applied to a convex
-      optimization problem with linear equality constraints.
+      optimization problem with linear equality constraints. In this case, it's
+      the vector:\n
+      \| grad(f(x)) + A^T v |\n
+      \| Ax - b             |\n
+      where `v` is the Lagrange multiplier vector for equality constraints.
       '''
       return np.hstack(
          [

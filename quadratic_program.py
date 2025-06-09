@@ -108,8 +108,8 @@ class QuadraticProgram:
    def kkt_matrix(self, x: np.ndarray, t: float) -> np.ndarray:
       '''
       Returns the KKT matrix for this quadratic program. The KKT matrix is:\n
-      | hess(f(x) + phi(x))  A |\n
-      | A^T                  0 |\n
+      \| hess(f(x) + phi(x))  A |\n
+      \| A^T                  0 |\n
       where phi(x) is the sum of log barriers applied to the linear inequality
       constraints and f(x) = x^T Q x + p^T x
       '''
