@@ -8,7 +8,7 @@ class InfeasibleStartNewton:
    def residual(self, x: np.ndarray, v: np.ndarray, t: float) -> np.ndarray:
       return np.hstack(
          [
-            self.qp.gradient(x, t) + np.dot(self.qp.A.transpose(), self.v),
+            self.qp.gradient(x, t) + np.dot(self.qp.A.transpose(), v),
             np.dot(self.qp.A, x) - self.qp.b
          ]
       )
@@ -37,8 +37,6 @@ class InfeasibleStartNewton:
       num_iters = 0
 
       while np.linalg.norm(residual) >= eps and (num_iters < max_num_iters):
-         # hess = self.qp.hessian(x, t)
-
          residual = self.residual(x, v, t)
          K = self.qp.kkt_matrix(x, t)
 
