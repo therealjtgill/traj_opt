@@ -2,10 +2,18 @@ import numpy as np
 from quadratic_program import QuadraticProgram
 
 class InfeasibleStartNewton:
+   '''
+   Implementation of Infeasible Start Newton's Method for a convex optimization
+   problem with linear equality constraints.
+   '''
    def __init__(self, qp: QuadraticProgram):
       self.qp = qp
 
    def residual(self, x: np.ndarray, v: np.ndarray, t: float) -> np.ndarray:
+      '''
+      The `residual` that results from the KKT conditions applied to a convex
+      optimization problem with linear equality constraints.
+      '''
       return np.hstack(
          [
             self.qp.gradient(x, t) + np.dot(self.qp.A.transpose(), v),
@@ -22,6 +30,17 @@ class InfeasibleStartNewton:
       max_num_iters: int,
       eps: float=1e-8
    ):
+      '''
+      x_init - Initial value for the decision variable, `x`. The initial guess
+         must be in the domain of the problem definition
+      v_init - Initial value for the equality constraint Lagrange multiplier, `v`
+      alpha - Parameter for line search over residual values
+      beta - Parameter to reduce line search magnitude by
+      max_num_iters - Maximum number of iterations to run the solver while the
+         residual is greater than some tolerance epsilon
+      eps - Tolerance epsilon for early termination; the solver terminates if the
+         L2 norm of the residual falls below this value
+      '''
       assert(len(v_init.shape) == 1)
       assert(v_init.shape[0] == self.qp.M)
       assert(alpha > 0)
