@@ -32,6 +32,7 @@ class InfeasibleStartNewton:
       alpha: float,
       beta: float,
       max_num_iters: int,
+      t: float = 20.0,
       eps: float=1e-8
    ):
       '''
@@ -55,16 +56,15 @@ class InfeasibleStartNewton:
       x = np.copy(x_init)
       v = np.copy(v_init)
 
-      t = 20.0
-      residual = self.residual(x, v, t)
+      res = self.residual(x, v, t)
 
       num_iters = 0
 
-      while np.linalg.norm(residual) >= eps and (num_iters < max_num_iters):
-         residual = self.residual(x, v, t)
+      while np.linalg.norm(res) >= eps and (num_iters < max_num_iters):
+         res = self.residual(x, v, t)
          K = self.qp.kkt_matrix(x, t)
 
-         delta_x_v = np.linalg.solve(K, -residual)
+         delta_x_v = np.linalg.solve(K, -res)
          delta_x = delta_x_v[0:self.qp.N]
          delta_v = delta_x_v[self.qp.N:]
 
@@ -77,6 +77,7 @@ class InfeasibleStartNewton:
 
          x += s * delta_x
          v += s * delta_v
+         print("ifsnm num iters:", num_iters, "residual norm:", np.linalg.norm(res))
 
          num_iters += 1
 
@@ -96,6 +97,7 @@ class FeasibleStartNewton:
       alpha: float,
       beta: float,
       max_num_iters: int,
+      t: float = 20.0,
       eps: float=1e-8
    ):
       assert(len(v_init.shape) == 1)
@@ -107,7 +109,6 @@ class FeasibleStartNewton:
       x = np.copy(x_init)
       v = np.copy(v_init)
 
-      t = 20.0
       num_iters = 0
 
       grad = self.qp.gradient(x, t)
@@ -129,12 +130,13 @@ class FeasibleStartNewton:
          s = 1.0
          while (
             not self.qp.in_domain(x + s * delta_x)
-            or self.qp.objective(x, t) > obj + alpha * s * np.dot(grad, delta_x)
+            or self.qp.objective(x + s * delta_x, t) > obj + alpha * s * np.dot(grad, delta_x)
          ):
             s *= beta
 
          x = x + s * delta_x
          v = v + s * delta_v
+         print("fsnm num iters:", num_iters)
 
          num_iters += 1
 
