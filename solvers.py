@@ -143,7 +143,7 @@ class FeasibleStartNewton:
 
          x = x + s * delta_x
 
-         print("fsnm num iters:", num_iters, "newton decrement:", newton_dec)
+         print("fsnm num iters:", num_iters, "line search:", s, "newton decrement:", newton_dec)
 
          num_iters += 1
 
