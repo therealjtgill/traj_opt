@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 
 class QuadraticProgram:
@@ -23,12 +24,31 @@ class QuadraticProgram:
            rank(A) = M < N\n
            C in [P, N], P < N\n
       '''
-      self.Q = Q
-      self.p = p
-      self.A = A
-      self.b = b
-      self.C = C
-      self.d = d
+      self.initialize(Q, p, A, b, C, d)
+
+   def initialize(
+      self,
+      Q: np.ndarray,
+      p: np.ndarray,
+      A: np.ndarray,
+      b: np.ndarray,
+      C: np.ndarray,
+      d: np.ndarray
+   ):
+      '''
+      min x^T Q x + p^Tx\n
+      s.t. Ax = b\n
+           Cx <= d\n
+           len(x) = N\n
+           rank(A) = M < N\n
+           C in [P, N], P < N\n
+      '''
+      self.Q = copy.deepcopy(Q)
+      self.p = copy.deepcopy(p)
+      self.A = copy.deepcopy(A)
+      self.b = copy.deepcopy(b)
+      self.C = copy.deepcopy(C)
+      self.d = copy.deepcopy(d)
 
       self.N = Q.shape[0]
       self.M = A.shape[0]
@@ -37,7 +57,6 @@ class QuadraticProgram:
       assert(np.linalg.matrix_rank(A) == self.M)
 
       assert(self.M < self.N)
-      assert(self.P < self.N)
 
       assert(len(p.shape) == 1)
       assert(len(b.shape) == 1)
@@ -52,9 +71,9 @@ class QuadraticProgram:
 
       print("C shape: ", C.shape)
 
-      self._partial_kkt_mat = np.zeros((self.N + self.M, self.N + self.M))
-      self._partial_kkt_mat[self.N: self.N + self.M, 0: self.N] = self.A
-      self._partial_kkt_mat[0: self.N, self.N: (self.N + self.M)] = self.A.transpose()
+      # self._partial_kkt_mat = np.zeros((self.N + self.M, self.N + self.M))
+      # self._partial_kkt_mat[self.N: self.N + self.M, 0: self.N] = self.A
+      # self._partial_kkt_mat[0: self.N, self.N: (self.N + self.M)] = self.A.transpose()
 
    def objective(self, x: np.ndarray, t: float) -> float:
       '''
@@ -99,7 +118,7 @@ class QuadraticProgram:
       hess = np.zeros_like(self.Q)
       linear_terms = np.dot(self.C, x) - self.d
       for i in range(self.P):
-         hess += np.outer(self.C[i], self.C[i]) / linear_terms[i]
+         hess += np.outer(self.C[i], self.C[i]) / (linear_terms[i] * linear_terms[i])
       hess *= (1.0 / t)
       hess += self.Q
 
@@ -113,7 +132,9 @@ class QuadraticProgram:
       where phi(x) is the sum of log barriers applied to the linear inequality
       constraints and f(x) = x^T Q x + p^T x
       '''
-      kkt_mat = np.copy(self._partial_kkt_mat)
+      kkt_mat = np.zeros((self.N + self.M, self.N + self.M))
+      kkt_mat[self.N: self.N + self.M, 0: self.N] = self.A
+      kkt_mat[0: self.N, self.N: (self.N + self.M)] = self.A.transpose()
       kkt_mat[0: self.N, 0: self.N] = self.hessian(x, t)
       return kkt_mat
 
