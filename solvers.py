@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 from quadratic_program import QuadraticProgram
 
@@ -29,10 +30,10 @@ class InfeasibleStartNewton:
       self,
       x_init: np.ndarray,
       v_init: np.ndarray,
-      alpha: float,
-      beta: float,
-      max_num_iters: int,
-      t: float = 20.0,
+      t: float,
+      alpha: float = 0.5,
+      beta: float = 0.9,
+      max_num_iters: int = 100,
       eps: float=1e-8
    ):
       '''
@@ -53,11 +54,10 @@ class InfeasibleStartNewton:
       assert(beta > 0)
       assert(max_num_iters > 0)
 
-      x = np.copy(x_init)
-      v = np.copy(v_init)
+      x = copy.deepcopy(x_init)
+      v = copy.deepcopy(v_init)
 
       res = self.residual(x, v, t)
-
       num_iters = 0
 
       while np.linalg.norm(res) >= eps and (num_iters < max_num_iters):
@@ -77,7 +77,7 @@ class InfeasibleStartNewton:
 
          x += s * delta_x
          v += s * delta_v
-         print("ifsnm num iters:", num_iters, "residual norm:", np.linalg.norm(res))
+         print("ifsnm num iters:", num_iters, "residual norm:", np.linalg.norm(res), "line search param:", s)
 
          num_iters += 1
 
@@ -94,10 +94,10 @@ class FeasibleStartNewton:
       self,
       x_init: np.ndarray,
       v_init: np.ndarray,
-      alpha: float,
-      beta: float,
-      max_num_iters: int,
-      t: float = 20.0,
+      t: float,
+      alpha: float = 0.5,
+      beta: float = 0.9,
+      max_num_iters: int = 100,
       eps: float=1e-8
    ):
       assert(len(v_init.shape) == 1)
@@ -106,8 +106,8 @@ class FeasibleStartNewton:
       assert(beta > 0)
       assert(max_num_iters > 0)
 
-      x = np.copy(x_init)
-      v = np.copy(v_init)
+      x = copy.deepcopy(x_init)
+      v = copy.deepcopy(v_init)
 
       num_iters = 0
 
@@ -116,16 +116,23 @@ class FeasibleStartNewton:
       K = self.qp.kkt_matrix(x, t)
       delta_x_v = np.linalg.solve(K, np.hstack([-grad, np.zeros((self.qp.M,))]))
       delta_x = delta_x_v[0:self.qp.N]
-      delta_v = delta_x_v[self.qp.N:]
+      v = delta_x_v[self.qp.N:]
 
-      while np.dot(np.dot(delta_x, hess), delta_x) >= eps and num_iters < max_num_iters:
+      newton_dec = np.sqrt(np.dot(np.dot(delta_x, hess), delta_x))
+
+      print("entering fsnm loop")
+      print("newton decrement:", newton_dec)
+
+      while newton_dec >= (2.0 * eps) and (num_iters < max_num_iters):
          obj = self.qp.objective(x, t)
          grad = self.qp.gradient(x, t)
          hess = self.qp.hessian(x, t)
          K = self.qp.kkt_matrix(x, t)
          delta_x_v = np.linalg.solve(K, np.hstack([-grad, np.zeros((self.qp.M,))]))
          delta_x = delta_x_v[0:self.qp.N]
-         delta_v = delta_x_v[self.qp.N:]
+         v = delta_x_v[self.qp.N:]
+
+         newton_dec = np.sqrt(np.dot(np.dot(delta_x, hess), delta_x))
 
          s = 1.0
          while (
@@ -135,8 +142,8 @@ class FeasibleStartNewton:
             s *= beta
 
          x = x + s * delta_x
-         v = v + s * delta_v
-         print("fsnm num iters:", num_iters)
+
+         print("fsnm num iters:", num_iters, "newton decrement:", newton_dec)
 
          num_iters += 1
 
