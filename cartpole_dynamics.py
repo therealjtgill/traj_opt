@@ -67,8 +67,8 @@ class CartpoleDynamics:
       '''
 
       u = np.clip(control_input, self._u_min, self._u_max)
-      cosz1 = np.cos(z[1])
-      sinz1 = np.sin(z[1])
+      cosz1 = np.cos(state[1])
+      sinz1 = np.sin(state[1])
       alpha = (self._m_pend + self._m_cart) / (self._m_pend * self._l_pend)
       g = 9.8
       denom = (cosz1 * cosz1 - alpha)
