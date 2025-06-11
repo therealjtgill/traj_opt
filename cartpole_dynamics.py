@@ -60,8 +60,8 @@ class CartpoleDynamics:
          `r` - affine part of the linear approximation of cartpole dynamics
          `b` - Jacobian of cartpole dynamics with respect to control input, `u`
 
-      - z = [cart_pos, pend_angle, cart_pos_speed, pend_angle_speed]
-      - u = force exerted on cart, clamped between +/-u_max
+      - state = [cart_pos, pend_angle, cart_pos_speed, pend_angle_speed]
+      - control_input = force exerted on cart, clamped between +/-u_max
       
       Returns `A`, `b`, `r`
       '''
