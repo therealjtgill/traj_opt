@@ -96,7 +96,7 @@ class QuadraticProgram:
       assert(x.shape[0] == self.N)
       assert(t > 0)
 
-      loss_grad = np.dot(self.Q, x)
+      loss_grad = np.dot(self.Q, x) + self.p
 
       barrier_grad = np.zeros_like(loss_grad)
       for i in range(self.C.shape[0]):
