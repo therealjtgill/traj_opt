@@ -46,7 +46,7 @@ class CartpoleDynamics:
       )
 
    def step(self, state: np.ndarray, control_input: float, dt: float, time: float):
-      zoh_input_dynamics = lambda t, y : self.x_dot_nonlinear(y, control_input, time)
+      zoh_input_dynamics = lambda t, y : self.x_dot_nonlinear(y, control_input, t)
 
       new_state = rk4(state, time, dt, zoh_input_dynamics)
 
