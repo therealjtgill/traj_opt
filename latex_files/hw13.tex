@@ -117,20 +117,20 @@ which can be approximated to first-order about an arbitrary $z_0$ and $u_0$ as
 \begin{equation}
     \label{linearized_dynamics}
     \begin{aligned}
-        \dot{z} &= f_0 + F z + G u \\
-        &= f(z_0, u_0) + \frac{\partial f(z_0, u_0)}{\partial z} z + \frac{\partial f(z_0, u_0)}{\partial u} u \\
-        &= f(z_0, u_0) + \nabla_z f(z_0, u_0)^T z + \nabla_u f(z_0, u_0)^T u .
+        \dot{z} &= p_0 + F z + G u \\
+        &= f(z_0, u_0) + \frac{\partial f(z_0, u_0)}{\partial z} (z - z_0) + \frac{\partial f(z_0, u_0)}{\partial u} (u - u_0) \\
+        &= f(z_0, u_0) + \nabla_z f(z_0, u_0)^T (z - z_0) + \nabla_u f(z_0, u_0)^T (u - u_0) .
     \end{aligned}
 \end{equation}
 
-The matrices $F$ and $G$ and the vector $f_0$ are defined as the following:
+The matrices $F$ and $G$ and the vector $p_0$ are defined as the following:
 
 \begin{equation}
     \label{eq:lin-dyn-labeled-derivs-whatevs}
     \begin{aligned}
         F &= \frac{\partial f(z_0, u_0)}{\partial z} \\
         G &= \frac{\partial f(z_0, u_0)}{\partial u} \\
-        f_0 &= f(z_0, u_0)
+        p_0 &= f(z_0, u_0) - F z_0 - G u_0
     \end{aligned}
 \end{equation}
 
@@ -139,8 +139,8 @@ The $A$ and $B$ matrices in \eqref{opt_prob} come from the analytical solution t
 \begin{equation}
     \label{general_linear_soln}
     \begin{aligned}
-        z(t) &= e^{F(t - t_0)}z(t_0) + e^{Ft}\int_{t_0}^t e^{-F\tau} (G u(\tau) + f_0) d\tau \\
-        &= \Phi(t, t_0)z(t_0) + \int_{t_0}^t \Phi(\tau, t_0) (G u(\tau) + f_0) d\tau
+        z(t) &= e^{F(t - t_0)}z(t_0) + e^{Ft}\int_{t_0}^t e^{-F\tau} (G u(\tau) + p_0) d\tau \\
+        &= \Phi(t, t_0)z(t_0) + \int_{t_0}^t \Phi(\tau, t_0) (G u(\tau) + p_0) d\tau
     \end{aligned}
 \end{equation}
 
@@ -149,9 +149,9 @@ Where $\Phi(t, t_0)$ is the state transition matrix. When $u(t)$ is a constant $
 \begin{equation}
     \label{constant_input_integ_soln}
     \begin{split}
-    &\int_{t_0}^{t_0 + \Delta t} \Phi(\tau, t_0) (G u(\tau) + f_0) d\tau\\
-    &= \int_{t_0}^{t_0 + \Delta t} e^{F(t_0 + \Delta t -\tau)} (G u_0 + f_0) d\tau \\
-    &= (e^{F \Delta t} - \mathbb{I})F^{-1}(G u_0 + f_0)
+    &\int_{t_0}^{t_0 + \Delta t} \Phi(\tau, t_0) (G u(\tau) + p_0) d\tau\\
+    &= \int_{t_0}^{t_0 + \Delta t} e^{F(t_0 + \Delta t -\tau)} (G u_0 + p_0) d\tau \\
+    &= (e^{F \Delta t} - \mathbb{I})F^{-1}(G u_0 + p_0)
     \end{split}
 \end{equation}
 
@@ -160,12 +160,12 @@ If $F$ is not invertible, then the integral in \eqref{constant_input_integ_soln}
 \begin{equation}
 \begin{aligned}
     \label{constant_input_integ_soln2}
-    &\int_{t_0}^{t_0 + \Delta t} e^{F(t_0 + \Delta t -\tau)} (G u_0 + f_0) d\tau \\
-    &= \sum_{k=0}^\infty \int_{t_0}^{t_0 + \Delta t} \frac{(F(t_0 + \Delta t -\tau))^k}{k!} d \tau (G u_0 + f_0)\\
-    &= \left( \sum_{k=1}^\infty \frac{F^{k-1} \Delta t^{k}}{k!} \right) (G u_0 + f_0) \\
-    &= \left( \Delta t + \frac{F \Delta t^2}{2!} + \frac{F^2 \Delta t^3}{3!} + ... \right) (G u_0 + f_0)
-    % &= e^{F \Delta t}z(t_0) + \left( \sum_{k=1}^\infty \frac{F^{k-1} \Delta t^{k}}{k!} \right) (G u_0 + f_0) \\
-    % &= e^{F \Delta t}z(t_0) + \left( \Delta t + \frac{F \Delta t^2}{2!} + \frac{F^2 \Delta t^3}{3!} + ... \right) (G u_0 + f_0)
+    &\int_{t_0}^{t_0 + \Delta t} e^{F(t_0 + \Delta t -\tau)} (G u_0 + p_0) d\tau \\
+    &= \sum_{k=0}^\infty \int_{t_0}^{t_0 + \Delta t} \frac{(F(t_0 + \Delta t -\tau))^k}{k!} d \tau (G u_0 + p_0)\\
+    &= \left( \sum_{k=1}^\infty \frac{F^{k-1} \Delta t^{k}}{k!} \right) (G u_0 + p_0) \\
+    &= \left( \Delta t + \frac{F \Delta t^2}{2!} + \frac{F^2 \Delta t^3}{3!} + ... \right) (G u_0 + p_0)
+    % &= e^{F \Delta t}z(t_0) + \left( \sum_{k=1}^\infty \frac{F^{k-1} \Delta t^{k}}{k!} \right) (G u_0 + p_0) \\
+    % &= e^{F \Delta t}z(t_0) + \left( \Delta t + \frac{F \Delta t^2}{2!} + \frac{F^2 \Delta t^3}{3!} + ... \right) (G u_0 + p_0)
 \end{aligned}
 \end{equation}
 
@@ -175,7 +175,7 @@ The matrices $A$ and $B$ and the vector $r_0$ are short hands for the results fr
     \begin{aligned}
         A &= e^{F \Delta t} = \sum_{k=0}^\infty \frac{(F \Delta t)^{k}}{k!} \\
         B &= \sum_{k=1}^\infty \frac{F^{k-1} \Delta t^{k}}{k!} G \\
-        r_0 &= \sum_{k=1}^\infty \frac{F^{k-1} \Delta t^{k}}{k!} f_0
+        r_0 &= \sum_{k=1}^\infty \frac{F^{k-1} \Delta t^{k}}{k!} p_0
     \end{aligned}
 \end{equation}
 
