@@ -86,9 +86,9 @@ class CartpoleDynamics:
 
       A[0, 2] = 1.0
       A[1, 3] = 1.0
-      A[2, 1] = ((g * sinz1 * sinz1 - g * cosz1 * cosz1 - (state[3] ** 2) * cosz1) / denom) + 2.0 * (((-g * sinz1 * cosz1 - l_pend * u - l_pend * (z[3] ** 2) * sinz1) * sinz1 * cosz1)) / (denom * denom)
-      A[2, 3] = -2.0 * self._l_pend * z[3] * sinz1 / denom
-      A[3, 1] = ((alpha * g * cosz1 - u * sinz1 - (state[3] ** 2) * (sinz1 * sinz1 - cosz1 * cosz1)) / denom) + 2.0 * (alpha * g * sinz1 + u * cosz1 + (z[3] ** 2) * sinz1 * cosz1) * (sinz1 * cosz1) / (denom * denom)
+      A[2, 1] = ((g * sinz1 * sinz1 - g * cosz1 * cosz1 - (state[3] ** 2) * cosz1) / denom) + 2.0 * (((-g * sinz1 * cosz1 - self._l_pend * u - self._l_pend * (state[3] ** 2) * sinz1) * sinz1 * cosz1)) / (denom * denom)
+      A[2, 3] = -2.0 * self._l_pend * state[3] * sinz1 / denom
+      A[3, 1] = ((alpha * g * cosz1 - u * sinz1 - (state[3] ** 2) * (sinz1 * sinz1 - cosz1 * cosz1)) / denom) + 2.0 * (alpha * g * sinz1 + u * cosz1 + (state[3] ** 2) * sinz1 * cosz1) * (sinz1 * cosz1) / (denom * denom)
       A[3, 3] = 2.0 * state[3] * sinz1 * cosz1 / denom
 
       b[2] = -1.0 / denom
