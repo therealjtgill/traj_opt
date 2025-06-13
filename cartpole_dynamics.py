@@ -1,4 +1,6 @@
 import numpy as np
+from typing import List, Tuple
+
 from dynamics import rk4
 
 class CartpoleDynamics:
@@ -16,7 +18,13 @@ class CartpoleDynamics:
       self._u_min = control_input_min
       self._u_max = control_input_max
 
-   def state_description(self):
+   def state_size(self) -> int:
+      return 4
+
+   def control_size(self) -> int:
+      return 1
+
+   def state_description(self) -> List[str]:
       return ["cart position", "pendulum angle", "cart position dot", "pendulum angle dot"]
 
    def x_dot_nonlinear(self, state: np.ndarray, control_input: float, time: float):
@@ -48,7 +56,13 @@ class CartpoleDynamics:
          ]
       )
 
-   def step(self, state: np.ndarray, control_input: float, dt: float, time: float):
+   def step(
+      self,
+      state: np.ndarray,
+      control_input: float,
+      dt: float,
+      time: float
+   ) -> np.ndarray:
       assert(len(state.shape) == 1)
       assert(state.shape[0] == 4)
 
@@ -58,7 +72,12 @@ class CartpoleDynamics:
 
       return new_state
 
-   def x_dot_linear(self, state: np.ndarray, control_input: float, time: float):
+   def x_dot_linear(
+      self,
+      state: np.ndarray,
+      control_input: float,
+      time: float
+   ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
       '''
       linearizes the cartpole dynamics about `z` and `u`, returns the `A` and `b` matrices
          `z_dot = f(t, z, u) ~ f(t_0, z_0, u_0) + grad(f, z)(t_0, z_0, u_0) ^ T (z - z_0) + grad(f, u)(t_0, z_0, u_0) ^ T (u - u_0)
