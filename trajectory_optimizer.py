@@ -32,6 +32,8 @@ class TrajectoryOptimizer:
 
       self.state_size: int = self.dynamics.state_size()
       self.control_size: int = self.dynamics.control_size()
+
+      # Number of elements in the decision variable
       self.decision_variable_size = self.num_collocation_points * (self.state_size + self.control_size)
       # Number of elements in the decision variable related to control input
       self.decision_variable_control_size = self.num_collocation_points * self.control_size
@@ -52,6 +54,9 @@ class TrajectoryOptimizer:
       A_eq, b_eq = self.equality_constraints()
       C_ineq, d_ineq = self.inequality_constraints()
       self.qp = QuadraticProgram(Q, p, A_eq, b_eq, C_ineq, d_ineq)
+
+      self.isnm = InfeasibleStartNewton(self.qp)
+      self.fsnm = FeasibleStartNewton(self.qp)
 
    def equality_constraints(self) -> Tuple[np.ndarray, np.ndarray]:
       '''
@@ -121,12 +126,12 @@ class TrajectoryOptimizer:
    def inequality_constraints(self):
       C_ineq = np.zeros(
          (
-            2 * self.num_collocation_points * self.control_size,
+            2 * self.decision_variable_control_size,
             self.decision_variable_size
          )
       )
 
-      d_ineq = np.zeros(2 * self.num_collocation_points * self.control_size)
+      d_ineq = np.zeros(2 * self.decision_variable_control_size,)
 
       # u <= u_max
       C_ineq[
@@ -145,3 +150,13 @@ class TrajectoryOptimizer:
       d_ineq[self.decision_variable_control_size: 2 * self.decision_variable_control_size] = -self.dynamics._u_min
 
       return C_ineq, d_ineq
+
+   def gogogo(
+      self,
+      barrier_t: float = 20.0,
+      barrier_lambda: float = 10.0,
+      residual_threshold: float = 1e-5,
+      max_num_ipm_iters: int = 10,
+      max_num_newton_iters: int = 100
+   ):
+      pass
