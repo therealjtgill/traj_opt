@@ -33,6 +33,10 @@ class TrajectoryOptimizer:
       self.state_size: int = self.dynamics.state_size()
       self.control_size: int = self.dynamics.control_size()
       self.decision_variable_size = self.num_collocation_points * (self.state_size + self.control_size)
+      # Number of elements in the decision variable related to control input
+      self.decision_variable_control_size = self.num_collocation_points * self.control_size
+      # Number of elements in the decision variable related to dynamic state
+      self.decision_variable_state_size = self.num_collocation_points * self.control_size
 
       # decision variable layout is
       # [control inputs, states]
@@ -45,10 +49,11 @@ class TrajectoryOptimizer:
 
       p = np.zeros(self.decision_variable_size)
 
-      A_eq, b_eq = self.linearized_dynamics_constraints()
+      A_eq, b_eq = self.equality_constraints()
+      C_ineq, d_ineq = self.inequality_constraints()
       self.qp = QuadraticProgram(Q, p, A_eq, b_eq, C_ineq, d_ineq)
 
-   def linearized_dynamics_constraints(self) -> Tuple[np.ndarray, np.ndarray]:
+   def equality_constraints(self) -> Tuple[np.ndarray, np.ndarray]:
       '''
       Returns the `A` matrix and `b` vector of dynamics equality constraints.
       If the object's relinearization sequence is `None`, then the system's
@@ -71,12 +76,7 @@ class TrajectoryOptimizer:
 
       num_entries = self.num_collocation_points * self.state_size if self.final_state is None else (self.num_collocation_points + 1) * self.state_size
 
-      A_eq = np.zeros(
-         (
-            num_entries,
-            self.num_collocation_points * (self.state_size + self.control_size)
-         )
-      )
+      A_eq = np.zeros((num_entries, self.decision_variable_size))
 
       b_eq = np.zeros(num_entries)
 
@@ -108,7 +108,7 @@ class TrajectoryOptimizer:
 
          b_eq[i * self.state_size : i * self.state_size + self.state_size] = np.dot(phi_integ, p_dyn)
 
-      if self.final_state is None:
+      if self.final_state is not None:
          A_eq[
             self.num_collocation_points * self.state_size: self.num_collocation_points * self.state_size + self.state_size,
             control_input_offset + self.num_collocation_points * self.state_size: control_input_offset + self.num_collocation_points * self.state_size + self.state_size,
@@ -117,3 +117,31 @@ class TrajectoryOptimizer:
          b_eq[self.num_collocation_points * self.state_size: self.num_collocation_points * self.state_size + self.state_size] = self.final_state
 
       return A_eq, b_eq
+
+   def inequality_constraints(self):
+      C_ineq = np.zeros(
+         (
+            2 * self.num_collocation_points * self.control_size,
+            self.decision_variable_size
+         )
+      )
+
+      d_ineq = np.zeros(2 * self.num_collocation_points * self.control_size)
+
+      # u <= u_max
+      C_ineq[
+         0:self.decision_variable_control_size,
+         0:self.decision_variable_control_size
+      ] = np.eye(self.decision_variable_control_size)
+
+      d_ineq[0:self.decision_variable_control_size] = self.dynamics._u_max
+
+      # u >= u_min
+      C_ineq[
+         self.decision_variable_control_size: 2 * self.decision_variable_control_size,
+         0:self.decision_variable_control_size
+      ] = -np.eye(self.decision_variable_control_size)
+
+      d_ineq[self.decision_variable_control_size: 2 * self.decision_variable_control_size] = -self.dynamics._u_min
+
+      return C_ineq, d_ineq
