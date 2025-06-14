@@ -45,7 +45,8 @@ class TrajectoryOptimizer:
 
       p = np.zeros(self.decision_variable_size)
 
-      self.qp = QuadraticProgram(Q, p)
+      A_eq, b_eq = self.linearized_dynamics_constraints()
+      self.qp = QuadraticProgram(Q, p, A_eq, b_eq, C_ineq, d_ineq)
 
    def linearized_dynamics_constraints(self) -> Tuple[np.ndarray, np.ndarray]:
       '''
@@ -72,12 +73,12 @@ class TrajectoryOptimizer:
 
       A_eq = np.zeros(
          (
-            self.num_collocation_points * self.state_size,
+            num_entries,
             self.num_collocation_points * (self.state_size + self.control_size)
          )
       )
 
-      b_eq = np.zeros(self.num_collocation_points * self.state_size)
+      b_eq = np.zeros(num_entries)
 
       control_input_offset = self.control_size * self.num_collocation_points
 
@@ -106,3 +107,13 @@ class TrajectoryOptimizer:
          ] = np.eye(self.state_size)
 
          b_eq[i * self.state_size : i * self.state_size + self.state_size] = np.dot(phi_integ, p_dyn)
+
+      if self.final_state is None:
+         A_eq[
+            self.num_collocation_points * self.state_size: self.num_collocation_points * self.state_size + self.state_size,
+            control_input_offset + self.num_collocation_points * self.state_size: control_input_offset + self.num_collocation_points * self.state_size + self.state_size,
+         ] = np.eye(self.state_size)
+
+         b_eq[self.num_collocation_points * self.state_size: self.num_collocation_points * self.state_size + self.state_size] = self.final_state
+
+      return A_eq, b_eq
