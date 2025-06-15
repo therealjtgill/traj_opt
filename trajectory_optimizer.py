@@ -79,10 +79,9 @@ class TrajectoryOptimizer:
          time = dt * i
          linear_terms.append(self.dynamics.x_dot_linear(state, control_input, time))
 
-      num_entries = self.num_collocation_points * self.state_size if self.final_state is None else (self.num_collocation_points + 1) * self.state_size
+      num_entries = self.decision_variable_state_size if self.final_state is None else self.decision_variable_state_size + self.state_size
 
       A_eq = np.zeros((num_entries, self.decision_variable_size))
-
       b_eq = np.zeros(num_entries)
 
       control_input_offset = self.control_size * self.num_collocation_points
@@ -123,7 +122,7 @@ class TrajectoryOptimizer:
 
       return A_eq, b_eq
 
-   def inequality_constraints(self):
+   def inequality_constraints(self) -> Tuple[np.ndarray, np.ndarray]:
       C_ineq = np.zeros(
          (
             2 * self.decision_variable_control_size,
@@ -153,10 +152,35 @@ class TrajectoryOptimizer:
 
    def gogogo(
       self,
+      x_init: np.ndarray,
+      v_init: np.ndarray,
       barrier_t: float = 20.0,
       barrier_lambda: float = 10.0,
       residual_threshold: float = 1e-5,
       max_num_ipm_iters: int = 10,
       max_num_newton_iters: int = 100
    ):
-      pass
+      assert(len(x_init.shape) == 1)
+      assert(len(v_init.shape) == 1)
+
+      assert(x_init.shape[0] == self.decision_variable_size)
+      if self.final_state is None:
+         assert(v_init.shape[0] == self.decision_variable_state_size)
+      else:
+         assert(v_init.shape[0] == self.decision_variable_state_size + self.state_size)
+
+      x_out, v_out, residual = self.isnm.solve(
+         x_init, v_init, barrier_t, 0.5, 0.9, max_num_newton_iters
+      )
+
+      if residual > residual_threshold:
+         print("Infeasible with ISNM residual", residual)
+         return
+      else:
+         print("Feasible with ISNM residual", residual)
+
+      for _ in range(max_num_ipm_iters):
+         barrier_t *= barrier_lambda
+         x_out, v_out, keep_going = self.fsnm.solve(x_out, v_out, barrier_t, 0.5, 0.9, max_num_newton_iters)
+         if not keep_going:
+            break
