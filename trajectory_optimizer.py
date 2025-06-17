@@ -93,10 +93,6 @@ class TrajectoryOptimizer:
       A_eq = np.zeros((num_entries, self.decision_variable_size))
       b_eq = np.zeros(num_entries)
 
-      print("A_eq size:", A_eq.shape)
-      print("length of relin seq:", len(relin_seq))
-      print("num linear terms:", len(linear_terms))
-
       control_input_offset = self.decision_variable_control_size
 
       # x_{i+1} = phi * x_i + phi_integ * B * u_i + phi * p
@@ -105,10 +101,8 @@ class TrajectoryOptimizer:
          A_dyn, B_dyn, p_dyn = linear_tuple
          phi, phi_integ = phi_and_phi_integ(A_dyn, dt)
 
-         # print("phi shape:", phi.shape, "phi integ shape:", phi_integ.shape)
-         # print("state size:", self.state_size)
-         # print("b dyn size:", B_dyn.shape)
-         # print("self state size:", self.state_size)
+         # index directly into the A matrix at the control input location if the
+         # control input's size is one, otherwise slice into the A matrix
 
          # control input i
          if self.control_size == 1:
