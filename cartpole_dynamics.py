@@ -1,4 +1,6 @@
 import numpy as np
+from typing import List, Tuple
+
 from dynamics import rk4
 
 class CartpoleDynamics:
@@ -15,8 +17,10 @@ class CartpoleDynamics:
       self._m_cart = cart_mass
       self._u_min = control_input_min
       self._u_max = control_input_max
+      self.state_size: int = 4
+      self.control_size: int = 1
 
-   def state_description(self):
+   def state_description(self) -> List[str]:
       return ["cart position", "pendulum angle", "cart position dot", "pendulum angle dot"]
 
    def x_dot_nonlinear(self, state: np.ndarray, control_input: float, time: float):
@@ -48,7 +52,13 @@ class CartpoleDynamics:
          ]
       )
 
-   def step(self, state: np.ndarray, control_input: float, dt: float, time: float):
+   def step(
+      self,
+      state: np.ndarray,
+      control_input: float,
+      dt: float,
+      time: float
+   ) -> np.ndarray:
       assert(len(state.shape) == 1)
       assert(state.shape[0] == 4)
 
@@ -58,24 +68,29 @@ class CartpoleDynamics:
 
       return new_state
 
-   def x_dot_linear(self, state: np.ndarray, control_input: float, time: float):
+   def x_dot_linear(
+      self,
+      state: np.ndarray,
+      control_input: float,
+      time: float
+   ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
       '''
       linearizes the cartpole dynamics about `z` and `u`, returns the `A` and `b` matrices
          `z_dot = f(t, z, u) ~ f(t_0, z_0, u_0) + grad(f, z)(t_0, z_0, u_0) ^ T (z - z_0) + grad(f, u)(t_0, z_0, u_0) ^ T (u - u_0)
          `A` - Jacobian of cartpole dynamics with respect to state, `z`
-         `r` - affine part of the linear approximation of cartpole dynamics
          `b` - Jacobian of cartpole dynamics with respect to control input, `u`
+         `r` - affine part of the linear approximation of cartpole dynamics
 
       - state = [cart_pos, pend_angle, cart_pos_speed, pend_angle_speed]
       - control_input = force exerted on cart, clamped between +/-u_max
       
-      Returns `A`, `b`, `r`
+      Returns `A`, `B`, `r`
       '''
       assert(len(state.shape) == 1)
-      assert(state.shape[0] == 4)
+      assert(state.shape[0] == self.state_size)
 
-      A = np.zeros((4, 4))
-      b = np.zeros(4)
+      A = np.zeros((self.state_size, self.state_size))
+      b = np.zeros(self.state_size)
 
       u = np.clip(control_input, self._u_min, self._u_max)
       cosz1 = np.cos(state[1])
