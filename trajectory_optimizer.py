@@ -73,7 +73,7 @@ class TrajectoryOptimizer:
       if self.relinearization_sequence is None:
          relin_seq = [
             (self.initial_state, (self.dynamics._u_max + self.dynamics._u_min) / 2.0),
-         ] * (self.num_collocation_points - 1)
+         ] * (self.num_collocation_points)
       else:
          relin_seq = self.relinearization_sequence
 
@@ -84,8 +84,11 @@ class TrajectoryOptimizer:
          time = dt * i
          linear_terms.append(self.dynamics.x_dot_linear(state, control_input, time))
 
-      # num_entries = self.decision_variable_state_size if self.final_state is None else self.decision_variable_state_size + self.state_size
-      num_entries = self.decision_variable_state_size if self.final_state is None else self.decision_variable_state_size + self.state_size
+      num_entries = 0
+      if self.final_state is not None:
+         num_entries = (self.num_collocation_points + 1) * self.state_size
+      else:
+         num_entries = self.num_collocation_points * self.state_size
 
       A_eq = np.zeros((num_entries, self.decision_variable_size))
       b_eq = np.zeros(num_entries)
@@ -120,24 +123,60 @@ class TrajectoryOptimizer:
                i * self.control_size : i * self.control_size + self.control_size
             ] = -np.dot(phi_integ, B_dyn)
 
-         # state k
-         A_eq[
-            i * self.state_size : i * self.state_size + self.state_size,
-            control_input_offset + i * self.state_size : control_input_offset + i * self.state_size + self.state_size
-         ] = -phi
+         # the state at k = 1 is not part of the decision variable, so it needs
+         # to be handled separately
 
-         # state k + 1
-         A_eq[
-            i * self.state_size : i * self.state_size + self.state_size,
-            control_input_offset + (i + 1) * self.state_size : control_input_offset + (i + 1) * self.state_size + self.state_size
-         ] = np.eye(self.state_size)
+         # # state k
+         # A_eq[
+         #    i * self.state_size : i * self.state_size + self.state_size,
+         #    control_input_offset + i * self.state_size : control_input_offset + i * self.state_size + self.state_size
+         # ] = -phi
 
-         b_eq[i * self.state_size : i * self.state_size + self.state_size] = np.dot(phi_integ, p_dyn)
+         # # state k + 1
+         # A_eq[
+         #    i * self.state_size : i * self.state_size + self.state_size,
+         #    control_input_offset + (i + 1) * self.state_size : control_input_offset + (i + 1) * self.state_size + self.state_size
+         # ] = np.eye(self.state_size)
+
+         # b_eq[i * self.state_size : i * self.state_size + self.state_size] = np.dot(phi_integ, p_dyn)
+
+         if i == 0:
+            # state k
+            # A_eq[
+            #    i * self.state_size : i * self.state_size + self.state_size,
+            #    control_input_offset + i * self.state_size : control_input_offset + i * self.state_size + self.state_size
+            # ] = -phi
+
+            # state k + 1
+            A_eq[
+               # i * self.state_size : i * self.state_size + self.state_size,
+               # control_input_offset + (i + 1) * self.state_size : control_input_offset + (i + 1) * self.state_size + self.state_size
+               i * self.state_size : i * self.state_size + self.state_size,
+               control_input_offset + i * self.state_size : control_input_offset + (i + 1) * self.state_size
+            ] = np.eye(self.state_size)
+
+            b_eq[i * self.state_size : i * self.state_size + self.state_size] = np.dot(phi_integ, p_dyn)
+         else:
+            # state k - 1
+            A_eq[
+               i * self.state_size : i * self.state_size + self.state_size,
+               control_input_offset + (i - 1) * self.state_size : control_input_offset + i * self.state_size
+            ] = -phi
+
+            # state k
+            A_eq[
+               i * self.state_size : i * self.state_size + self.state_size,
+               control_input_offset + i * self.state_size : control_input_offset + (i + 1) * self.state_size
+            ] = np.eye(self.state_size)
+
+            b_eq[i * self.state_size : i * self.state_size + self.state_size] = np.dot(phi_integ, p_dyn)
 
       if self.final_state is not None:
+         print("final state row range:", self.num_collocation_points * self.state_size, self.num_collocation_points * self.state_size + self.state_size,)
+         print("final state column range:", control_input_offset + (self.num_collocation_points - 1) * self.state_size, control_input_offset + self.num_collocation_points * self.state_size,)
          A_eq[
             self.num_collocation_points * self.state_size: self.num_collocation_points * self.state_size + self.state_size,
-            control_input_offset + (self.num_collocation_points - 1) * self.state_size: control_input_offset + (self.num_collocation_points - 1) * self.state_size + self.state_size,
+            control_input_offset + (self.num_collocation_points - 1) * self.state_size: control_input_offset + self.num_collocation_points * self.state_size,
          ] = np.eye(self.state_size)
 
          b_eq[self.num_collocation_points * self.state_size: self.num_collocation_points * self.state_size + self.state_size] = self.final_state
