@@ -99,7 +99,7 @@ class TrajectoryOptimizer:
 
       control_input_offset = self.decision_variable_control_size
 
-      # x_{k+1} = phi * x_k + phi_integ * B * u_k + phi * p
+      # x_{i+1} = phi * x_i + phi_integ * B * u_i + phi * p
 
       for i, linear_tuple in enumerate(linear_terms):
          A_dyn, B_dyn, p_dyn = linear_tuple
@@ -110,9 +110,8 @@ class TrajectoryOptimizer:
          # print("b dyn size:", B_dyn.shape)
          # print("self state size:", self.state_size)
 
-         # control input k
+         # control input i
          if self.control_size == 1:
-            print("range or something?", i * self.state_size,  i * self.state_size + self.state_size)
             A_eq[
                i * self.state_size : i * self.state_size + self.state_size,
                i * self.control_size
@@ -123,47 +122,26 @@ class TrajectoryOptimizer:
                i * self.control_size : i * self.control_size + self.control_size
             ] = -np.dot(phi_integ, B_dyn)
 
-         # the state at k = 1 is not part of the decision variable, so it needs
+         # the state at i = 1 is not part of the decision variable, so it needs
          # to be handled separately
 
-         # # state k
-         # A_eq[
-         #    i * self.state_size : i * self.state_size + self.state_size,
-         #    control_input_offset + i * self.state_size : control_input_offset + i * self.state_size + self.state_size
-         # ] = -phi
-
-         # # state k + 1
-         # A_eq[
-         #    i * self.state_size : i * self.state_size + self.state_size,
-         #    control_input_offset + (i + 1) * self.state_size : control_input_offset + (i + 1) * self.state_size + self.state_size
-         # ] = np.eye(self.state_size)
-
-         # b_eq[i * self.state_size : i * self.state_size + self.state_size] = np.dot(phi_integ, p_dyn)
-
          if i == 0:
-            # state k
-            # A_eq[
-            #    i * self.state_size : i * self.state_size + self.state_size,
-            #    control_input_offset + i * self.state_size : control_input_offset + i * self.state_size + self.state_size
-            # ] = -phi
-
-            # state k + 1
+            # state i
             A_eq[
-               # i * self.state_size : i * self.state_size + self.state_size,
-               # control_input_offset + (i + 1) * self.state_size : control_input_offset + (i + 1) * self.state_size + self.state_size
                i * self.state_size : i * self.state_size + self.state_size,
                control_input_offset + i * self.state_size : control_input_offset + (i + 1) * self.state_size
             ] = np.eye(self.state_size)
 
+            # affine portion of linearization plus dot(phi, x_init)
             b_eq[i * self.state_size : i * self.state_size + self.state_size] = np.dot(phi_integ, p_dyn) + np.dot(phi, self.initial_state)
          else:
-            # state k - 1
+            # state i - 1
             A_eq[
                i * self.state_size : i * self.state_size + self.state_size,
                control_input_offset + (i - 1) * self.state_size : control_input_offset + i * self.state_size
             ] = -phi
 
-            # state k
+            # state i
             A_eq[
                i * self.state_size : i * self.state_size + self.state_size,
                control_input_offset + i * self.state_size : control_input_offset + (i + 1) * self.state_size
@@ -172,8 +150,6 @@ class TrajectoryOptimizer:
             b_eq[i * self.state_size : i * self.state_size + self.state_size] = np.dot(phi_integ, p_dyn)
 
       if self.final_state is not None:
-         print("final state row range:", self.num_collocation_points * self.state_size, self.num_collocation_points * self.state_size + self.state_size,)
-         print("final state column range:", control_input_offset + (self.num_collocation_points - 1) * self.state_size, control_input_offset + self.num_collocation_points * self.state_size,)
          A_eq[
             self.num_collocation_points * self.state_size: self.num_collocation_points * self.state_size + self.state_size,
             control_input_offset + (self.num_collocation_points - 1) * self.state_size: control_input_offset + self.num_collocation_points * self.state_size,
@@ -252,6 +228,7 @@ class TrajectoryOptimizer:
       assert(len(x.shape) == 1)
       assert(x.shape[0] == self.decision_variable_size)
       states = np.reshape(x[self.decision_variable_control_size:], (-1, self.state_size))
+
       states_list = [z for z in states]
 
       return states_list
