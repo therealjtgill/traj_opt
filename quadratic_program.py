@@ -50,17 +50,21 @@ class QuadraticProgram:
       self.C = copy.deepcopy(C)
       self.d = copy.deepcopy(d)
 
+      assert(len(Q.shape) == 2)
+      assert(len(A.shape) == 2)
+      assert(len(C.shape) == 2)
+      assert(len(p.shape) == 1)
+      assert(len(b.shape) == 1)
+      assert(len(d.shape) == 1)
+
       self.N = Q.shape[0]
       self.M = A.shape[0]
       self.P = C.shape[0]
 
+      print("rank of A:", np.linalg.matrix_rank(A))
       assert(np.linalg.matrix_rank(A) == self.M)
 
       assert(self.M < self.N)
-
-      assert(len(p.shape) == 1)
-      assert(len(b.shape) == 1)
-      assert(len(d.shape) == 1)
 
       assert(p.shape[0] == self.N)
       assert(b.shape[0] == self.M)
