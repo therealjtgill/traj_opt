@@ -155,7 +155,7 @@ class TrajectoryOptimizer:
                control_input_offset + i * self.state_size : control_input_offset + (i + 1) * self.state_size
             ] = np.eye(self.state_size)
 
-            b_eq[i * self.state_size : i * self.state_size + self.state_size] = np.dot(phi_integ, p_dyn)
+            b_eq[i * self.state_size : i * self.state_size + self.state_size] = np.dot(phi_integ, p_dyn) + np.dot(phi, self.initial_state)
          else:
             # state k - 1
             A_eq[
