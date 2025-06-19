@@ -15,7 +15,8 @@ class TrajectoryOptimizer:
       time_horizon: float,
       initial_state: np.ndarray,
       dynamics: CartpoleDynamics,
-      final_state: np.ndarray = None,
+      final_state: np.ndarray | None = None,
+      state_weights: np.ndarray | None = None,
       reference_trajectory: List[Tuple[np.ndarray, np.ndarray]] | None = None, # (state, input)
       relinearization_sequence: List[np.ndarray] | None = None
    ):
@@ -25,6 +26,20 @@ class TrajectoryOptimizer:
       assert(relinearization_sequence is None or len(relinearization_sequence) == num_collocation_points)
       assert(len(effort_weights.shape) == 1)
       assert(effort_weights.shape[0] == num_collocation_points * dynamics.control_size)
+      assert(final_state is None or (len(final_state.shape) == 1 and final_state.shape[0] == dynamics.state_size))
+      assert(
+         len(effort_weights.shape) == 2
+         and effort_weights.shape[0] == num_collocation_points * dynamics.control_size
+         and effort_weights.shape[1] == num_collocation_points * dynamics.control_size
+      )
+      assert(
+         state_weights is None
+         or (
+            len(state_weights.shape) == 2
+            and state_weights.shape[0] == num_collocation_points * dynamics.state_size
+            and state_weights.shape[1] == num_collocation_points * dynamics.state_size
+         )
+      )
 
       self.dynamics: CartpoleDynamics = dynamics
       self.num_collocation_points: int = num_collocation_points
