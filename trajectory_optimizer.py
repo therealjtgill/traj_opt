@@ -17,16 +17,28 @@ class TrajectoryOptimizer:
       dynamics: CartpoleDynamics,
       final_state: np.ndarray | None = None,
       state_weights: np.ndarray | None = None,
-      reference_trajectory: List[Tuple[np.ndarray, np.ndarray]] | None = None, # (state, input)
+      reference_trajectory: List[np.ndarray] | None = None, # all elements are states
       relinearization_sequence: List[np.ndarray] | None = None
    ):
       assert(num_collocation_points > 0)
       assert(time_horizon > 0.0)
-      assert(reference_trajectory is None or len(reference_trajectory) == num_collocation_points)
-      assert(relinearization_sequence is None or len(relinearization_sequence) == num_collocation_points)
+      assert(
+         reference_trajectory is None
+         or len(reference_trajectory) == num_collocation_points
+      )
+      assert(
+         relinearization_sequence is None
+         or len(relinearization_sequence) == num_collocation_points
+      )
       assert(len(effort_weights.shape) == 1)
       assert(effort_weights.shape[0] == num_collocation_points * dynamics.control_size)
-      assert(final_state is None or (len(final_state.shape) == 1 and final_state.shape[0] == dynamics.state_size))
+      assert(
+         final_state is None
+         or (
+            len(final_state.shape) == 1
+            and final_state.shape[0] == dynamics.state_size
+         )
+      )
       assert(
          len(effort_weights.shape) == 1
          and effort_weights.shape[0] == num_collocation_points * dynamics.control_size
@@ -67,6 +79,19 @@ class TrajectoryOptimizer:
       ] = np.diag(effort_weights)
 
       p = np.zeros(self.decision_variable_size)
+
+      if state_weights is not None and reference_trajectory is not None:
+         # (x - c)^T Q (x - c) = x^T Q x - 2 c^T Q x + c^T Q c
+         # this merges the linear term into the p matrix from the canonical
+         # objective function, x^T Q x + p^T x
+         # p = -2 Q c
+         Q[
+            self.decision_variable_control_size:,
+            self.decision_variable_control_size:
+         ] = np.diag(state_weights)
+
+         flat_reference_trajectory = np.reshape(np.array(reference_trajectory), self.decision_variable_state_size)
+         p[self.decision_variable_control_size:] = -2.0 * state_weights * flat_reference_trajectory
 
       A_eq, b_eq = self.equality_constraints()
       C_ineq, d_ineq = self.inequality_constraints()
