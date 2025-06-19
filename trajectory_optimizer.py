@@ -28,16 +28,14 @@ class TrajectoryOptimizer:
       assert(effort_weights.shape[0] == num_collocation_points * dynamics.control_size)
       assert(final_state is None or (len(final_state.shape) == 1 and final_state.shape[0] == dynamics.state_size))
       assert(
-         len(effort_weights.shape) == 2
+         len(effort_weights.shape) == 1
          and effort_weights.shape[0] == num_collocation_points * dynamics.control_size
-         and effort_weights.shape[1] == num_collocation_points * dynamics.control_size
       )
       assert(
          state_weights is None
          or (
-            len(state_weights.shape) == 2
+            len(state_weights.shape) == 1
             and state_weights.shape[0] == num_collocation_points * dynamics.state_size
-            and state_weights.shape[1] == num_collocation_points * dynamics.state_size
          )
       )
 
