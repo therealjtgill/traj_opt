@@ -21,6 +21,7 @@ class TrajectoryOptimizer:
    ):
       assert(num_collocation_points > 0)
       assert(time_horizon > 0.0)
+      assert(reference_trajectory is None or len(reference_trajectory) == num_collocation_points)
       assert(relinearization_sequence is None or len(relinearization_sequence) == num_collocation_points)
       assert(len(effort_weights.shape) == 1)
       assert(effort_weights.shape[0] == num_collocation_points * dynamics.control_size)
@@ -48,10 +49,9 @@ class TrajectoryOptimizer:
 
       Q = np.zeros((self.decision_variable_size, self.decision_variable_size))
       Q[
-         0: self.control_size * self.num_collocation_points,
-         0: self.control_size * self.num_collocation_points
+         0: self.decision_variable_control_size,
+         0: self.decision_variable_control_size
       ] = np.diag(effort_weights)
-      # ] = np.diag(np.array([1.0,] * self.decision_variable_control_size))
 
       p = np.zeros(self.decision_variable_size)
 
