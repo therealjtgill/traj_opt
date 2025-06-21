@@ -57,12 +57,27 @@ class InfeasibleStartNewton:
       x = copy.deepcopy(x_init)
       v = copy.deepcopy(v_init)
 
+      res_norm_prev = np.inf
       res = self.residual(x, v, t)
+      res_norm = np.linalg.norm(res)
       num_iters = 0
 
-      while np.linalg.norm(res) >= eps and (num_iters < max_num_iters):
-         res = self.residual(x, v, t)
+      print("stupid infeasible newton termination criteria:", (abs(res_norm - res_norm_prev) / (res_norm if np.isinf(res_norm_prev) else max(res_norm, res_norm_prev))))
+
+      while (
+         res_norm >= eps
+         and (num_iters < max_num_iters)
+         and (abs(res_norm - res_norm_prev) / (res_norm if np.isinf(res_norm_prev) else max(res_norm, res_norm_prev))) > 1e-6
+      ):
+         # res_norm_prev = copy.deepcopy(np.linalg.norm(res))
+         res_norm_prev = copy.deepcopy(res_norm)
+         # res = self.residual(x, v, t)
+         # res_norm = np.linalg.norm(res)
          K = self.qp.kkt_matrix(x, t)
+
+         # print("res norm:", res_norm)
+         # print("res norm prev:", res_norm_prev)
+         # print("stupid infeasible newton termination criteria:", (abs(res_norm - res_norm_prev) / (res_norm if np.isinf(res_norm_prev) else max(res_norm, res_norm_prev))))
 
          delta_x_v = np.linalg.solve(K, -res)
          delta_x = delta_x_v[0:self.qp.N]
@@ -77,6 +92,8 @@ class InfeasibleStartNewton:
 
          x += s * delta_x
          v += s * delta_v
+         res = self.residual(x, v, t)
+         res_norm = np.linalg.norm(res)
          print("ifsnm num iters:", num_iters, "residual norm:", np.linalg.norm(res), "line search param:", s)
 
          num_iters += 1
@@ -118,12 +135,19 @@ class FeasibleStartNewton:
       delta_x = delta_x_v[0:self.qp.N]
       v = delta_x_v[self.qp.N:]
 
+      newton_dec_prev = np.inf
       newton_dec = np.sqrt(np.dot(np.dot(delta_x, hess), delta_x))
 
       print("entering fsnm loop")
       print("newton decrement:", newton_dec)
 
-      while newton_dec >= (2.0 * eps) and (num_iters < max_num_iters):
+      print("stupid feasible newton termination criteria:", (abs(newton_dec_prev - newton_dec) / (newton_dec if np.isinf(newton_dec_prev) else max(newton_dec_prev, newton_dec))))
+
+      while (
+         newton_dec >= (2.0 * eps)
+         and (num_iters < max_num_iters)
+         and (abs(newton_dec_prev - newton_dec) / (newton_dec if np.isinf(newton_dec_prev) else max(newton_dec_prev, newton_dec))) > 1e-6
+      ):
          obj = self.qp.objective(x, t)
          grad = self.qp.gradient(x, t)
          hess = self.qp.hessian(x, t)
@@ -132,7 +156,11 @@ class FeasibleStartNewton:
          delta_x = delta_x_v[0:self.qp.N]
          v = delta_x_v[self.qp.N:]
 
-         newton_dec = np.sqrt(np.dot(np.dot(delta_x, hess), delta_x))
+         newton_dec_prev = copy.deepcopy(newton_dec)
+         # newton_dec = np.sqrt(np.dot(np.dot(delta_x, hess), delta_x))
+
+         # print("nd prev:", newton_dec_prev, "nd:", newton_dec)
+         # print("stupid feasible newton termination criteria:", (abs(newton_dec_prev - newton_dec) / (newton_dec if np.isinf(newton_dec_prev) else max(newton_dec_prev, newton_dec))))
 
          s = 1.0
          while (
@@ -144,6 +172,11 @@ class FeasibleStartNewton:
          x = x + s * delta_x
 
          print("fsnm num iters:", num_iters, "line search:", s, "newton decrement:", newton_dec)
+         grad = self.qp.gradient(x, t)
+         hess = self.qp.hessian(x, t)
+         newton_dec = np.sqrt(np.dot(np.dot(delta_x, hess), delta_x))
+
+         print("nd prev:", newton_dec_prev, "nd:", newton_dec)
 
          num_iters += 1
 
