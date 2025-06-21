@@ -36,7 +36,7 @@ class CartpoleDynamics:
       assert(len(state.shape) == 1)
       assert(state.shape[0] == 4)
 
-      u = np.clip(control_input, self._u_min, self._u_max)
+      u = np.squeeze(np.clip(control_input, self._u_min, self._u_max))
       cosz1 = np.cos(state[1])
       sinz1 = np.sin(state[1])
       alpha = (self._m_pend + self._m_cart) / (self._m_pend * self._l_pend)
