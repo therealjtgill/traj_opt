@@ -15,15 +15,43 @@ class TrajectoryOptimizer:
       time_horizon: float,
       initial_state: np.ndarray,
       dynamics: CartpoleDynamics,
-      final_state: np.ndarray = None,
-      reference_trajectory: List[Tuple[np.ndarray, np.ndarray]] | None = None, # (state, input)
+      final_state: np.ndarray | None = None,
+      state_weights: np.ndarray | None = None, # applied to the reference trajectory, if it's not none
+      reference_trajectory: List[np.ndarray] | None = None, # all elements are states
+      final_state_penalty: float | None = None,
       relinearization_sequence: List[np.ndarray] | None = None
    ):
       assert(num_collocation_points > 0)
       assert(time_horizon > 0.0)
-      assert(relinearization_sequence is None or len(relinearization_sequence) == num_collocation_points)
+      assert(
+         reference_trajectory is None
+         or len(reference_trajectory) == num_collocation_points
+      )
+      assert(
+         relinearization_sequence is None
+         or len(relinearization_sequence) == num_collocation_points
+      )
       assert(len(effort_weights.shape) == 1)
       assert(effort_weights.shape[0] == num_collocation_points * dynamics.control_size)
+      assert(
+         final_state is None
+         or (
+            len(final_state.shape) == 1
+            and final_state.shape[0] == dynamics.state_size
+         )
+      )
+      assert(final_state_penalty is None or final_state_penalty > 0.0)
+      assert(
+         len(effort_weights.shape) == 1
+         and effort_weights.shape[0] == num_collocation_points * dynamics.control_size
+      )
+      assert(
+         state_weights is None
+         or (
+            len(state_weights.shape) == 1
+            and state_weights.shape[0] == num_collocation_points * dynamics.state_size
+         )
+      )
 
       self.dynamics: CartpoleDynamics = dynamics
       self.num_collocation_points: int = num_collocation_points
@@ -43,17 +71,39 @@ class TrajectoryOptimizer:
       # Number of elements in the decision variable related to dynamic state
       self.decision_variable_state_size = self.num_collocation_points * self.state_size
 
+      self.final_state_penalty = self.final_state is not None and final_state_penalty is not None
+      self.final_state_constraint = self.final_state is not None and final_state_penalty is None
+
       # decision variable layout is
       # [control inputs, states]
 
       Q = np.zeros((self.decision_variable_size, self.decision_variable_size))
       Q[
-         0: self.control_size * self.num_collocation_points,
-         0: self.control_size * self.num_collocation_points
+         0: self.decision_variable_control_size,
+         0: self.decision_variable_control_size
       ] = np.diag(effort_weights)
-      # ] = np.diag(np.array([1.0,] * self.decision_variable_control_size))
 
       p = np.zeros(self.decision_variable_size)
+
+      if self.final_state_penalty:
+         Q[
+            self.decision_variable_size - self.dynamics.state_size:,
+            self.decision_variable_size - self.dynamics.state_size:
+         ] = final_state_penalty * np.eye(self.dynamics.state_size)
+
+         p[self.decision_variable_size - self.dynamics.state_size:] = -final_state_penalty * self.final_state
+      elif state_weights is not None and reference_trajectory is not None:
+         # 0.5 * (x - c)^T Q (x - c) = 0.5 * x^T Q x - c^T Q x + 0.5 * c^T Q c
+         # this merges the linear term into the p matrix from the canonical
+         # objective function, 0.5 * x^T Q x + p^T x
+         # p = -Q c
+         Q[
+            self.decision_variable_control_size:,
+            self.decision_variable_control_size:
+         ] = np.diag(state_weights)
+
+         flat_reference_trajectory = np.reshape(np.array(reference_trajectory), self.decision_variable_state_size)
+         p[self.decision_variable_control_size:] = -state_weights * flat_reference_trajectory
 
       A_eq, b_eq = self.equality_constraints()
       C_ineq, d_ineq = self.inequality_constraints()
@@ -85,7 +135,8 @@ class TrajectoryOptimizer:
          linear_terms.append(self.dynamics.x_dot_linear(state, control_input, time))
 
       num_entries = 0
-      if self.final_state is not None:
+      # if self.final_state is not None:
+      if self.final_state_constraint:
          num_entries = (self.num_collocation_points + 1) * self.state_size
       else:
          num_entries = self.num_collocation_points * self.state_size
@@ -143,7 +194,8 @@ class TrajectoryOptimizer:
 
             b_eq[i * self.state_size : i * self.state_size + self.state_size] = np.dot(phi_integ, p_dyn)
 
-      if self.final_state is not None:
+      # if self.final_state is not None:
+      if self.final_state_constraint:
          A_eq[
             self.num_collocation_points * self.state_size: self.num_collocation_points * self.state_size + self.state_size,
             control_input_offset + (self.num_collocation_points - 1) * self.state_size: control_input_offset + self.num_collocation_points * self.state_size,
@@ -195,7 +247,7 @@ class TrajectoryOptimizer:
       assert(len(v_init.shape) == 1)
 
       assert(x_init.shape[0] == self.decision_variable_size)
-      if self.final_state is None:
+      if not self.final_state_constraint:
          assert(v_init.shape[0] == self.decision_variable_state_size)
       else:
          assert(v_init.shape[0] == self.decision_variable_state_size + self.state_size)
