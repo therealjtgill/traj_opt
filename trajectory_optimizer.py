@@ -16,7 +16,7 @@ class TrajectoryOptimizer:
       initial_state: np.ndarray,
       dynamics: CartpoleDynamics,
       final_state: np.ndarray | None = None,
-      state_weights: np.ndarray | None = None,
+      state_weights: np.ndarray | None = None, # applied to the reference trajectory, if it's not none
       reference_trajectory: List[np.ndarray] | None = None, # all elements are states
       final_state_penalty: float | None = None,
       relinearization_sequence: List[np.ndarray] | None = None
