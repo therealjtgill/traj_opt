@@ -124,7 +124,6 @@ class QuadraticProgram:
       hess = np.zeros_like(self.Q)
       linear_terms = np.dot(self.C, x) - self.d
       for i in range(self.P):
-         # hess += np.outer(self.C[i], self.C[i]) / (linear_terms[i] * linear_terms[i])
          hess += self.C_row_outer_products[i] / (linear_terms[i] * linear_terms[i])
       hess *= (1.0 / t)
       hess += self.Q
