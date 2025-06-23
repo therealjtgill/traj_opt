@@ -79,6 +79,8 @@ class QuadraticProgram:
       # self._partial_kkt_mat[self.N: self.N + self.M, 0: self.N] = self.A
       # self._partial_kkt_mat[0: self.N, self.N: (self.N + self.M)] = self.A.transpose()
 
+      self.C_row_outer_products = [np.outer(row, row) for row in self.C]
+
    def objective(self, x: np.ndarray, t: float) -> float:
       '''
       Returns the original quadratic objective function along with the penalty
@@ -122,7 +124,7 @@ class QuadraticProgram:
       hess = np.zeros_like(self.Q)
       linear_terms = np.dot(self.C, x) - self.d
       for i in range(self.P):
-         hess += np.outer(self.C[i], self.C[i]) / (linear_terms[i] * linear_terms[i])
+         hess += self.C_row_outer_products[i] / (linear_terms[i] * linear_terms[i])
       hess *= (1.0 / t)
       hess += self.Q
 
