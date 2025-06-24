@@ -325,4 +325,12 @@ class BoxInequalityQuadraticProgram:
       assert(len(x.shape) == 1)
       assert(x.shape[0] == self.N)
 
-      return np.all(np.dot(self.C, x) <= self.d)
+      for index, upper_bound in self.upper_inequalities:
+         if x[index] > upper_bound:
+            return False
+
+      for index, lower_bound in self.lower_inequalities:
+         if x[index] < lower_bound:
+            return False
+
+      return True
