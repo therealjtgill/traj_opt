@@ -4,7 +4,7 @@ from typing import List, Tuple
 
 from cartpole_dynamics import CartpoleDynamics
 from dynamics import phi_and_phi_integ
-from quadratic_program import QuadraticProgram
+from quadratic_program import QuadraticProgram, BoxInequalityQuadraticProgram
 from solvers import FeasibleStartNewton, InfeasibleStartNewton
 
 class TrajectoryOptimizer:
@@ -106,8 +106,10 @@ class TrajectoryOptimizer:
          p[self.decision_variable_control_size:] = -state_weights * flat_reference_trajectory
 
       A_eq, b_eq = self.equality_constraints()
-      C_ineq, d_ineq = self.inequality_constraints()
-      self.qp = QuadraticProgram(Q, p, A_eq, b_eq, C_ineq, d_ineq)
+      # C_ineq, d_ineq = self.inequality_constraints()
+      # self.qp = QuadraticProgram(Q, p, A_eq, b_eq, C_ineq, d_ineq)
+      upper_ineq, lower_ineq = self.box_inequality_constraints()
+      self.qp = BoxInequalityQuadraticProgram(Q, p, A_eq, b_eq, upper_ineq, lower_ineq)
 
       self.isnm = InfeasibleStartNewton(self.qp)
       self.fsnm = FeasibleStartNewton(self.qp)
@@ -232,6 +234,16 @@ class TrajectoryOptimizer:
       d_ineq[self.decision_variable_control_size: 2 * self.decision_variable_control_size] = -self.dynamics._u_min
 
       return C_ineq, d_ineq
+
+   def box_inequality_constraints(self) -> Tuple[List[Tuple[int, float]], List[Tuple[int, float]]]:
+      upper_inequalities = []
+      lower_inequalities = []
+
+      for i in range(self.decision_variable_control_size):
+         upper_inequalities.append((i, self.dynamics._u_max))
+         lower_inequalities.append((i, self.dynamics._u_min))
+
+      return upper_inequalities, lower_inequalities
 
    def gogogo(
       self,

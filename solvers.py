@@ -1,13 +1,14 @@
 import copy
 import numpy as np
-from quadratic_program import QuadraticProgram
+import scipy
+from quadratic_program import QuadraticProgram, BoxInequalityQuadraticProgram
 
 class InfeasibleStartNewton:
    '''
    Implementation of Infeasible Start Newton's Method for a convex optimization
    problem with linear equality constraints. 
    '''
-   def __init__(self, qp: QuadraticProgram):
+   def __init__(self, qp: QuadraticProgram | BoxInequalityQuadraticProgram):
       self.qp = qp
 
    def residual(self, x: np.ndarray, v: np.ndarray, t: float) -> np.ndarray:
@@ -69,17 +70,10 @@ class InfeasibleStartNewton:
          and (num_iters < max_num_iters)
          and (abs(res_norm - res_norm_prev) / (res_norm if np.isinf(res_norm_prev) else max(res_norm, res_norm_prev))) > 1e-6
       ):
-         # res_norm_prev = copy.deepcopy(np.linalg.norm(res))
          res_norm_prev = copy.deepcopy(res_norm)
-         # res = self.residual(x, v, t)
-         # res_norm = np.linalg.norm(res)
          K = self.qp.kkt_matrix(x, t)
 
-         # print("res norm:", res_norm)
-         # print("res norm prev:", res_norm_prev)
-         # print("stupid infeasible newton termination criteria:", (abs(res_norm - res_norm_prev) / (res_norm if np.isinf(res_norm_prev) else max(res_norm, res_norm_prev))))
-
-         delta_x_v = np.linalg.solve(K, -res)
+         delta_x_v = scipy.linalg.solve(K, -res, assume_a='sym')
          delta_x = delta_x_v[0:self.qp.N]
          delta_v = delta_x_v[self.qp.N:]
 
@@ -101,7 +95,7 @@ class InfeasibleStartNewton:
       return x, v, np.linalg.norm(self.residual(x, v, t))
 
 class FeasibleStartNewton:
-   def __init__(self, qp: QuadraticProgram):
+   def __init__(self, qp: QuadraticProgram | BoxInequalityQuadraticProgram):
       self.qp = qp
 
    def newton_decrement(self, x: np.ndarray, t: float) -> float:
@@ -131,7 +125,7 @@ class FeasibleStartNewton:
       grad = self.qp.gradient(x, t)
       hess = self.qp.hessian(x, t)
       K = self.qp.kkt_matrix(x, t)
-      delta_x_v = np.linalg.solve(K, np.hstack([-grad, np.zeros((self.qp.M,))]))
+      delta_x_v = scipy.linalg.solve(K, np.hstack([-grad, np.zeros((self.qp.M,))]), assume_a='sym')
       delta_x = delta_x_v[0:self.qp.N]
       v = delta_x_v[self.qp.N:]
 
@@ -140,8 +134,6 @@ class FeasibleStartNewton:
 
       print("entering fsnm loop")
       print("newton decrement:", newton_dec)
-
-      print("stupid feasible newton termination criteria:", (abs(newton_dec_prev - newton_dec) / (newton_dec if np.isinf(newton_dec_prev) else max(newton_dec_prev, newton_dec))))
 
       while (
          newton_dec >= (2.0 * eps)
@@ -152,15 +144,11 @@ class FeasibleStartNewton:
          grad = self.qp.gradient(x, t)
          hess = self.qp.hessian(x, t)
          K = self.qp.kkt_matrix(x, t)
-         delta_x_v = np.linalg.solve(K, np.hstack([-grad, np.zeros((self.qp.M,))]))
+         delta_x_v = scipy.linalg.solve(K, np.hstack([-grad, np.zeros((self.qp.M,))]), assume_a='sym')
          delta_x = delta_x_v[0:self.qp.N]
          v = delta_x_v[self.qp.N:]
 
          newton_dec_prev = copy.deepcopy(newton_dec)
-         # newton_dec = np.sqrt(np.dot(np.dot(delta_x, hess), delta_x))
-
-         # print("nd prev:", newton_dec_prev, "nd:", newton_dec)
-         # print("stupid feasible newton termination criteria:", (abs(newton_dec_prev - newton_dec) / (newton_dec if np.isinf(newton_dec_prev) else max(newton_dec_prev, newton_dec))))
 
          s = 1.0
          while (
@@ -176,7 +164,7 @@ class FeasibleStartNewton:
          hess = self.qp.hessian(x, t)
          newton_dec = np.sqrt(np.dot(np.dot(delta_x, hess), delta_x))
 
-         print("nd prev:", newton_dec_prev, "nd:", newton_dec)
+         # print("nd prev:", newton_dec_prev, "nd:", newton_dec)
 
          num_iters += 1
 
