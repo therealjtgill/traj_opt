@@ -209,7 +209,7 @@ class BoxInequalityQuadraticProgram:
          assert(index <= Q.shape[0])
          temp_bounds[index][0] = bound
 
-      for index, lower, upper in temp_bounds:
+      for index, (lower, upper) in enumerate(temp_bounds):
          assert(lower < upper)
 
       self.N = Q.shape[0]
