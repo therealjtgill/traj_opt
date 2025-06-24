@@ -1,5 +1,6 @@
 import copy
 import numpy as np
+import scipy
 from quadratic_program import QuadraticProgram, BoxInequalityQuadraticProgram
 
 class InfeasibleStartNewton:
@@ -72,7 +73,8 @@ class InfeasibleStartNewton:
          res_norm_prev = copy.deepcopy(res_norm)
          K = self.qp.kkt_matrix(x, t)
 
-         delta_x_v = np.linalg.solve(K, -res)
+         # delta_x_v = np.linalg.solve(K, -res)
+         delta_x_v = scipy.linalg.solve(K, -res, assume_a='sym')
          delta_x = delta_x_v[0:self.qp.N]
          delta_v = delta_x_v[self.qp.N:]
 
@@ -124,7 +126,8 @@ class FeasibleStartNewton:
       grad = self.qp.gradient(x, t)
       hess = self.qp.hessian(x, t)
       K = self.qp.kkt_matrix(x, t)
-      delta_x_v = np.linalg.solve(K, np.hstack([-grad, np.zeros((self.qp.M,))]))
+      # delta_x_v = np.linalg.solve(K, np.hstack([-grad, np.zeros((self.qp.M,))]))
+      delta_x_v = scipy.linalg.solve(K, np.hstack([-grad, np.zeros((self.qp.M,))]), assume_a='sym')
       delta_x = delta_x_v[0:self.qp.N]
       v = delta_x_v[self.qp.N:]
 
@@ -145,7 +148,8 @@ class FeasibleStartNewton:
          grad = self.qp.gradient(x, t)
          hess = self.qp.hessian(x, t)
          K = self.qp.kkt_matrix(x, t)
-         delta_x_v = np.linalg.solve(K, np.hstack([-grad, np.zeros((self.qp.M,))]))
+         # delta_x_v = np.linalg.solve(K, np.hstack([-grad, np.zeros((self.qp.M,))]))
+         delta_x_v = scipy.linalg.solve(K, np.hstack([-grad, np.zeros((self.qp.M,))]), assume_a='sym')
          delta_x = delta_x_v[0:self.qp.N]
          v = delta_x_v[self.qp.N:]
 
