@@ -286,7 +286,6 @@ class TrajectoryOptimizer:
       assert(len(x.shape) == 1)
       assert(x.shape[0] == self.decision_variable_size)
       states = np.reshape(x[self.decision_variable_control_size:], (-1, self.state_size))
-
       states_list = [z for z in states]
 
       return states_list
