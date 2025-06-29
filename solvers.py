@@ -88,7 +88,7 @@ class InfeasibleStartNewton:
          v += s * delta_v
          res = self.residual(x, v, t)
          res_norm = np.linalg.norm(res)
-         print("ifsnm num iters:", num_iters, "residual norm:", np.linalg.norm(res), "line search param:", s)
+         # print("ifsnm num iters:", num_iters, "residual norm:", np.linalg.norm(res), "line search param:", s)
 
          num_iters += 1
 
@@ -132,8 +132,8 @@ class FeasibleStartNewton:
       newton_dec_prev = np.inf
       newton_dec = np.sqrt(np.dot(np.dot(delta_x, hess), delta_x))
 
-      print("entering fsnm loop")
-      print("newton decrement:", newton_dec)
+      # print("entering fsnm loop")
+      # print("newton decrement:", newton_dec)
 
       while (
          newton_dec >= (2.0 * eps)
@@ -159,7 +159,7 @@ class FeasibleStartNewton:
 
          x = x + s * delta_x
 
-         print("fsnm num iters:", num_iters, "line search:", s, "newton decrement:", newton_dec)
+         # print("fsnm num iters:", num_iters, "line search:", s, "newton decrement:", newton_dec)
          grad = self.qp.gradient(x, t)
          hess = self.qp.hessian(x, t)
          newton_dec = np.sqrt(np.dot(np.dot(delta_x, hess), delta_x))
