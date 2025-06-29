@@ -225,6 +225,8 @@ class BoxInequalityQuadraticProgram:
       assert(self.N > 0)
       assert(self.N == Q.shape[1])
 
+      self.Q_diag = np.array([self.Q[i, i] for i in range(self.N)])
+
       # self._partial_kkt_mat = np.zeros((self.N + self.M, self.N + self.M))
       # self._partial_kkt_mat[self.N: self.N + self.M, 0: self.N] = self.A
       # self._partial_kkt_mat[0: self.N, self.N: (self.N + self.M)] = self.A.transpose()
@@ -246,7 +248,8 @@ class BoxInequalityQuadraticProgram:
       for index, lower_bound in self.lower_inequalities:
          beta += -1/t * np.log(-(lower_bound - x[index]))
 
-      return 0.5 * np.dot(np.dot(x, self.Q), x) + np.dot(self.p, x) + beta
+      # return 0.5 * np.dot(np.dot(x, self.Q), x) + np.dot(self.p, x) + beta
+      return 0.5 * np.dot(x, self.Q_diag * x) + np.dot(self.p, x) + beta
 
    def gradient(self, x: np.ndarray, t: float) -> np.ndarray:
       '''
@@ -267,7 +270,8 @@ class BoxInequalityQuadraticProgram:
 
       # return loss_grad + barrier_grad
 
-      grad = np.dot(self.Q, x) + self.p
+      # grad = np.dot(self.Q, x) + self.p
+      grad = self.Q_diag * x + self.p
 
       for index, upper_bound in self.upper_inequalities:
          grad[index] += -1/t * (1.0 / (x[index] - upper_bound))
